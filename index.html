@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sleeper League Exporter</title>
+  <meta name="description" content="Download every trade, transaction, roster, matchup, draft, and league rule from a Sleeper fantasy football league as a zip." />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="wrap">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">SL</span>
+        <div>
+          <h1>Sleeper League Exporter</h1>
+          <p class="sub">Full league history in one zip: trades, transactions, rosters, matchups, drafts, and rules.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- Step 1: user lookup -->
+    <section class="card" id="step-user">
+      <div class="step-head">
+        <span class="step-num">1</span>
+        <h2>Find your leagues</h2>
+      </div>
+      <form id="user-form" class="row" autocomplete="on">
+        <label class="field grow">
+          <span>Sleeper username</span>
+          <input id="username" name="username" type="text" placeholder="e.g. your_sleeper_name" required spellcheck="false" autocapitalize="off" />
+        </label>
+        <button class="btn primary" type="submit" id="find-btn">Find leagues</button>
+      </form>
+      <details class="alt">
+        <summary>Have a league ID instead?</summary>
+        <form id="league-id-form" class="row">
+          <label class="field grow">
+            <span>League ID</span>
+            <input id="league-id" type="text" inputmode="numeric" placeholder="e.g. 1257105154906267648" spellcheck="false" />
+          </label>
+          <button class="btn" type="submit">Load league</button>
+        </form>
+      </details>
+      <p class="status" id="user-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <!-- Step 2: league selection -->
+    <section class="card hidden" id="step-league">
+      <div class="step-head">
+        <span class="step-num">2</span>
+        <h2>Choose a league</h2>
+        <label class="field inline">
+          <span>Season</span>
+          <select id="season-filter"></select>
+        </label>
+      </div>
+      <div id="league-list" class="league-list" role="radiogroup" aria-label="Leagues"></div>
+    </section>
+
+    <!-- Step 3: export -->
+    <section class="card hidden" id="step-export">
+      <div class="step-head">
+        <span class="step-num">3</span>
+        <h2>Export</h2>
+      </div>
+      <div id="selected-league" class="selected-league"></div>
+      <div class="options">
+        <label class="check">
+          <input type="checkbox" id="opt-history" checked />
+          <span><strong>Include every prior season</strong><br /><small>Follows the league back through each renewal for full history and all-time rivalries.</small></span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="opt-players" />
+          <span><strong>Include full NFL player database</strong><br /><small>Adds about 15 MB. Players referenced by your league are always included.</small></span>
+        </label>
+      </div>
+      <button class="btn primary big" id="export-btn" type="button">Download league data (.zip)</button>
+
+      <div id="progress" class="progress hidden" aria-live="polite">
+        <div class="bar"><div class="fill" id="progress-fill"></div></div>
+        <div class="progress-meta">
+          <span id="progress-msg">Starting</span>
+          <span id="progress-count"></span>
+        </div>
+      </div>
+      <p class="status" id="export-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <!-- Results -->
+    <section class="card hidden" id="step-result">
+      <div class="step-head">
+        <span class="step-num done">&#10003;</span>
+        <h2>Export complete</h2>
+        <button class="btn" id="download-again" type="button">Download again</button>
+      </div>
+      <div id="result-body"></div>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    <p>Uses the public, read-only <a href="https://docs.sleeper.com/" target="_blank" rel="noopener">Sleeper API</a>. No login, and nothing leaves your browser except requests to Sleeper.</p>
+  </footer>
+
+  <script src="vendor/jszip.min.js"></script>
+  <script src="js/sleeper-api.js"></script>
+  <script src="js/collector.js"></script>
+  <script src="js/transform.js"></script>
+  <script src="js/zip-writer.js"></script>
+  <script src="js/player-cache.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

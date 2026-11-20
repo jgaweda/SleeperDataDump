@@ -1,0 +1,13 @@
+{
+  "name": "sleeper-data-dump",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser app that exports a Sleeper fantasy football league's full history to a zip.",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node --test tests/*.test.mjs",
+    "export": "node scripts/export-node.mjs"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
