@@ -87,6 +87,20 @@
       add("my_team/draft_picks.csv", toCsv(my.draftPicks));
     }
 
+    // --- house rules (league constitution) ----------------------------------
+    const house = model.house;
+    if (house) {
+      add("house_rules/constitution.md", house.text);
+      add("house_rules/constitution_check.md", NS.houseChecksMarkdown(house, latest.league.name, latest.season));
+      add("house_rules/constitution_check.csv", toCsv(house.checks));
+      add("house_rules/house_rules.json", json({ version: house.version, rules: house.rules }));
+      add("house_rules/house_standings.csv", toCsv(house.standings));
+      add("house_rules/draft_order.csv", toCsv(house.draftOrder));
+      add("house_rules/lineup_issues.csv", toCsv(house.lineupIssues));
+      add("house_rules/lineup_summary.csv", toCsv(house.lineupSummary));
+      add("house_rules/dues_obligations.csv", toCsv(house.duesObligations));
+    }
+
     // --- players & meta ----------------------------------------------------
     add("players/players_referenced.json", json(model.playersReferenced));
     if (dataset.playersFull) add("players/players_nfl_full.json", JSON.stringify(dataset.playersFull));
@@ -118,16 +132,22 @@
         draft_picks: t.draftPicks.length,
         players_referenced: Object.keys(model.playersReferenced).length,
       },
+      house_rules: house
+        ? {
+            version: house.version,
+            checks: house.checks.reduce((a, c) => ((a[c.status] = (a[c.status] || 0) + 1), a), {}),
+          }
+        : null,
       api_requests: dataset.requestCount,
       files: [...files, "README.md", "manifest.json"].sort(),
     };
     top.file("manifest.json", json(manifest));
-    top.file("README.md", readme(manifest, my));
+    top.file("README.md", readme(manifest, my, !!house));
 
     return { zip, folderName, fileName: `${folderName}.zip`, manifest };
   }
 
-  function readme(m, my) {
+  function readme(m, my, hasHouse) {
     const seasons = m.seasons.map((s) => s.season).join(", ");
     return `# ${m.league_name}: Sleeper data export
 
@@ -155,7 +175,13 @@ ${my && my.found ? `\n"My team" views are built for **${my.displayName}** (user_
 | \`seasons/<year>/matchups/week_XX.json\` | Raw matchups by week, including per-player points and starters |
 | \`seasons/<year>/drafts/<draft_id>/\` | Raw draft settings, picks, and traded picks |
 | \`seasons/<year>/playoffs/\` | Winners and losers brackets |
-| \`my_team/\` | The same data filtered to your team, plus rivals and trade partners |
+| \`my_team/\` | The same data filtered to your team, plus rivals and trade partners |${hasHouse ? `
+| \`house_rules/constitution.md\` | The written league constitution |
+| \`house_rules/constitution_check.md\` | Each written rule compared with Sleeper's actual settings |
+| \`house_rules/house_standings.csv\` | Standings with the house tiebreakers and 5 + 1 points-wildcard seeding, compared with Sleeper's bracket |
+| \`house_rules/draft_order.csv\` | Rookie draft order by house formula, compared with the draft that actually ran |
+| \`house_rules/lineup_issues.csv\`, \`lineup_summary.csv\` | Empty starting slots and zero-point starters, with abandonment threshold flags |
+| \`house_rules/dues_obligations.csv\` | Dues each owner must prepay because of future picks they traded away |` : ""}
 | \`players/players_referenced.json\` | Name, position, and team for every player referenced in this export |
 | \`manifest.json\` | Machine-readable index of seasons, counts, and files |
 

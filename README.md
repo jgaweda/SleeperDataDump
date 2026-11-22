@@ -57,6 +57,23 @@ The script uses the same modules as the browser app. This makes it suitable for 
 
 The raw API responses are kept exactly as Sleeper returned them. The CSVs are derived from them.
 
+## League constitution (house rules)
+
+`js/house-rules.js` holds the written constitution plus a machine-readable version of it. When **Apply league constitution** is checked, the export adds `house_rules/`:
+
+| File | What it does |
+| --- | --- |
+| `constitution.md` | The written rules, verbatim |
+| `constitution_check.md` / `.csv` | Every checkable rule compared with Sleeper's settings: PASS, MISMATCH, CONFLICT (the rules contradict themselves), or INFO |
+| `house_standings.csv` | Ranking by win %, PF, Max PF, then PA. Playoff seeds are the top 5 by record plus 1 points wildcard, compared with the bracket Sleeper actually ran |
+| `draft_order.csv` | Rookie draft order: non-playoff teams by lowest Max PF, then playoff teams by finish (champion last). Compared with the draft that actually followed |
+| `lineup_issues.csv`, `lineup_summary.csv` | Empty starting slots per week (invalid), zero-point starters (review), and whether the 2-invalid-week abandonment threshold was reached |
+| `dues_obligations.csv` | For each owner who traded away future picks, the season their dues must be paid through and the amount due upfront |
+
+To apply the constitution automatically for a league, add any of its season league IDs to `leagueIds` in `js/house-rules.js`. Otherwise the checkbox setting is remembered per league in the browser. Headless: add `--house-rules` to `scripts/export-node.mjs`.
+
+Sleeper's own Max PF already counts taxi players' points. It matched optimal lineups computed with taxi players included, so the taxi rule needs no extra calculation.
+
 ## Architecture
 
 | File | Responsibility |
@@ -65,6 +82,7 @@ The raw API responses are kept exactly as Sleeper returned them. The CSVs are de
 | `js/collector.js` | Walks `previous_league_id` to find every season and pulls each endpoint. Returns raw data only |
 | `js/transform.js` | Builds normalized tables keyed by manager `user_id`, which is stable across seasons, and renders `rules.md` |
 | `js/zip-writer.js` | Lays out the zip, manifest, and README |
+| `js/house-rules.js`, `js/house-rules-engine.js` | League constitution text and structured rules, and the engine that applies and checks them |
 | `js/player-cache.js` | 24-hour IndexedDB cache for `/players/nfl` (about 15 MB), per Sleeper's once-per-day guidance |
 | `js/app.js` | UI. All league data is rendered with `textContent` |
 
@@ -78,7 +96,7 @@ A typical export uses about 45 API requests per season. A 2-season, 12-team leag
 npm test
 ```
 
-These are offline unit tests for the transform layer. They cover trades that include picks and FAAB, waiver bids, failed claims, playoff and consolation classification, head-to-head totals, champion detection, and in-season week cutoffs.
+These are offline unit tests for the transform layer and the house-rules engine. They cover trades that include picks and FAAB, waiver bids, failed claims, playoff and consolation classification, head-to-head totals, champion detection, and in-season week cutoffs.
 
 ## Deploy (GitHub Pages)
 

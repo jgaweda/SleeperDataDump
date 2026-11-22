@@ -145,3 +145,11 @@ details.alt form { margin-top: 10px; }
 .tree { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; background: var(--surface-2); padding: 12px; border-radius: 8px; overflow-x: auto; white-space: pre; }
 
 .foot { color: var(--muted); font-size: 0.82rem; padding-bottom: 32px; }
+
+.inline-details { margin-top: 6px; }
+.inline-details summary { color: var(--accent-strong); font-size: 0.85rem; cursor: pointer; }
+.inline-details .tree { white-space: pre-wrap; max-height: 320px; overflow-y: auto; margin: 8px 0 0; }
+.badge { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; letter-spacing: 0.03em; }
+.badge.pass { background: var(--accent-soft); color: var(--accent-strong); }
+.badge.mismatch, .badge.conflict { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+.badge.info { background: var(--surface-2); color: var(--muted); }

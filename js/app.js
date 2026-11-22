@@ -11,6 +11,7 @@
 
   const LEAGUE_TYPES = { 0: "Redraft", 1: "Keeper", 2: "Dynasty" };
   const STORAGE_KEY = "sleeper-exporter:username";
+  const HOUSE_KEY = (leagueId) => `sleeper-exporter:house:${leagueId}`;
 
   const state = {
     nflState: null,
@@ -221,10 +222,22 @@
         )
       )
     );
+    $("opt-house").checked = houseRulesDefault(state.selected);
     show("step-export");
     show("step-result", false);
     setStatus("export-status", "");
     $("step-export").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  /** On if the league is pinned in house-rules.js, or the user turned it on for this league before. */
+  function houseRulesDefault(lin) {
+    const pinned = SD.HOUSE_RULES.leagueIds || [];
+    if (lin.seasons.some((l) => pinned.includes(l.league_id))) return true;
+    try {
+      return localStorage.getItem(HOUSE_KEY(lin.head.league_id)) === "1";
+    } catch (_) {
+      return false;
+    }
   }
 
   function resetDownstream() {
@@ -259,6 +272,7 @@
       });
       updateProgress({ message: "Building tables", done: 1, total: 1 });
       const model = SD.buildModel(dataset);
+      if ($("opt-house").checked) model.house = SD.applyHouseRules(dataset, model, SD.HOUSE_RULES);
       const { zip, fileName, folderName, manifest } = SD.buildZip(dataset, model, window.JSZip);
       updateProgress({ message: "Compressing zip", done: 1, total: 1 });
       const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
@@ -357,12 +371,15 @@
       body.push(h("p", { class: "note" }, `${state.user.display_name} is not a manager in this league, so my_team/ was skipped.`));
     }
 
+    if (model.house) body.push(...renderHouse(model.house));
+
     const tree = [
       `${folderName}/`,
       "  README.md, manifest.json",
       "  history/      managers, standings, matchups, head_to_head, transactions, trades, drafts",
       ...manifest.seasons.map((s) => `  seasons/${s.season}/  league.json, rules.md, rosters, matchups/, transactions/, drafts/, playoffs/`),
       my && my.found ? "  my_team/      your seasons, rivals, matchups, trades, roster" : null,
+      model.house ? "  house_rules/  constitution, settings check, house standings, draft order, lineups, dues" : null,
       "  players/      player lookup for every referenced player",
     ].filter(Boolean).join("\n");
     body.push(h("h3", { style: "margin:20px 0 8px;font-size:0.95rem" }, "What's in the zip"), h("div", { class: "tree" }, tree));
@@ -371,6 +388,45 @@
     $("result-body").replaceChildren(...body);
     show("step-result");
     $("step-result").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function renderHouse(house) {
+    const sub = (text) => h("h3", { style: "margin:20px 0 8px;font-size:0.95rem" }, text);
+    const flagged = house.checks.filter((c) => c.status === "mismatch" || c.status === "conflict");
+    const passed = house.checks.filter((c) => c.status === "pass").length;
+    const out = [sub(`Constitution check: ${passed} pass, ${flagged.length} to fix`)];
+    if (flagged.length) {
+      out.push(h("table", { class: "mini" },
+        h("thead", {}, h("tr", {}, h("th", {}, ""), h("th", {}, "Rule"), h("th", {}, "Written"), h("th", {}, "Sleeper"))),
+        h("tbody", {}, flagged.map((c) => h("tr", {},
+          h("td", {}, h("span", { class: `badge ${c.status}` }, c.status.toUpperCase())),
+          h("td", {}, c.rule),
+          h("td", {}, c.expected),
+          h("td", {}, c.actual))))));
+    } else {
+      out.push(h("p", { class: "note" }, "Every checkable rule matches Sleeper's settings."));
+    }
+
+    const latestSeason = house.draftOrder.length ? house.draftOrder[0].draft_season : null;
+    const order = house.draftOrder.filter((d) => d.draft_season === latestSeason);
+    if (order.length) {
+      out.push(
+        sub(`${latestSeason} rookie draft order (${order[0].status})`),
+        h("table", { class: "mini" },
+          h("thead", {}, h("tr", {}, h("th", {}, "Pick"), h("th", {}, "Team"), h("th", {}, "Basis"))),
+          h("tbody", {}, order.map((d) => h("tr", {},
+            h("td", { class: "num" }, d.pick),
+            h("td", {}, d.team_name),
+            h("td", {}, d.basis)))))
+      );
+    }
+
+    const abandoned = house.lineupSummary.filter((s) => s.abandonment_threshold_reached);
+    if (abandoned.length) {
+      out.push(h("p", { class: "note" },
+        `Abandonment threshold reached: ${abandoned.map((a) => `${a.manager} (${a.season}, weeks ${a.invalid_week_list})`).join("; ")}.`));
+    }
+    return out;
   }
 
   function formatBytes(n) {
@@ -387,6 +443,13 @@
   $("league-id-form").addEventListener("submit", onLoadLeagueId);
   $("season-filter").addEventListener("change", renderLeagues);
   $("export-btn").addEventListener("click", onExport);
+  $("house-text").textContent = SD.HOUSE_RULES.text;
+  $("opt-house").addEventListener("change", (e) => {
+    if (!state.selected) return;
+    try {
+      localStorage.setItem(HOUSE_KEY(state.selected.head.league_id), e.target.checked ? "1" : "0");
+    } catch (_) { /* storage blocked */ }
+  });
   $("download-again").addEventListener("click", () => {
     if (state.lastZip) triggerDownload(state.lastZip.blob, state.lastZip.fileName);
   });

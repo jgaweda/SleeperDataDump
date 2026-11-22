@@ -76,6 +76,12 @@
           <input type="checkbox" id="opt-players" />
           <span><strong>Include full NFL player database</strong><br /><small>Adds about 15 MB. Players referenced by your league are always included.</small></span>
         </label>
+        <label class="check">
+          <input type="checkbox" id="opt-house" />
+          <span><strong>Apply league constitution</strong><br /><small>Adds the written rules, a check of each rule against Sleeper's settings, house tiebreakers and 5 + 1 seeding, rookie draft order, lineup violations, and dues owed on traded picks.</small>
+            <details class="inline-details"><summary>View constitution</summary><pre class="tree" id="house-text"></pre></details>
+          </span>
+        </label>
       </div>
       <button class="btn primary big" id="export-btn" type="button">Download league data (.zip)</button>
 
@@ -109,6 +115,8 @@
   <script src="js/collector.js"></script>
   <script src="js/transform.js"></script>
   <script src="js/zip-writer.js"></script>
+  <script src="js/house-rules.js"></script>
+  <script src="js/house-rules-engine.js"></script>
   <script src="js/player-cache.js"></script>
   <script src="js/app.js"></script>
 </body>
